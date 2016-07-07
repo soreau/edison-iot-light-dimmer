@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016 Scott Moreau
+ */
+
 var express = require("express");
 var app = express();
 var http = require("http").Server(app);
@@ -21,10 +25,10 @@ var client_sockets = [];
 var major_version = process.versions.node.split(".")[0];
 
 
-// Serve index.html
+/* Serve index.html */
 app.use(express.static(__dirname));
 
-// Listen on 8080 for http and 8081 for socket.io
+/* Listen on 8080 for http and 8081 for socket.io */
 http.listen(sport, "127.0.0.1", function() {
 	console.log("Socket.io listening on *:" + sport);
 
@@ -34,7 +38,7 @@ http.listen(sport, "127.0.0.1", function() {
 });
 
 
-// Connect to device server
+/* Connect to device server */
 function begin_device_comms(address, port) {
 	var socket_addr = "http://" + address + ":" + port;
 	console.log("Attemption connection to " + socket_addr);
@@ -97,7 +101,7 @@ function begin_device_comms(address, port) {
 }
 
 
-// Device discovery functions
+/* Device discovery functions */
 
 function close_dgram_socket(socket) {
 	socket.close();
@@ -124,8 +128,8 @@ function get_ipv4_addresses() {
 	return addresses;
 }
 
-// Send datagrams on a few broadcast addresses and
-// listen for replies to discover the device addresses
+/* Send datagrams on a few broadcast addresses and
+ * listen for replies to discover the device addresses */
 
 function begin_dgram_discovery() {
 	var timeout = null;
@@ -172,8 +176,8 @@ function begin_dgram_discovery() {
 		if (msg.toString() != "IOT_DISCOVER_DEVICE_RESPONSE")
 			return;
 
-		// We might get duplicate messages from the same device
-		// so check we haven't already added it to the list
+		/* We might get duplicate messages from the same device
+		 * so check we haven't already added it to the list */
 		if (device_addresses.indexOf(data.address) == -1) {
 			device_addresses.push(data.address);
 			begin_device_comms(data.address, dport);
@@ -218,8 +222,8 @@ function device_discovery_listen() {
 }
 
 
-// Initial connection
-// Socket.io connection fires when localhost:8080 is requested from browser
+/* Initial connection
+ * Socket.io connection fires when localhost:8080 is requested from browser */
 
 io.on("connection", function(socket) {
 	console.log("Client connected.");

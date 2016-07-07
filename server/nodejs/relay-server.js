@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2016 Scott Moreau
+ */
+
 var net = require('net');
 var dgram = require('dgram');
 var http = require('http');
@@ -167,7 +171,7 @@ function connect_local_socket() {
 }
 
 
-// Make device discovable by listening and responding to datagrams
+/* Make device discovable by listening and responding to datagrams */
 
 var socket = dgram.createSocket("udp4");
 
@@ -222,7 +226,7 @@ function request_client_connect() {
 }
 
 
-// Socket.io server - connection to remote client
+/* Socket.io server - connection to remote client */
 
 var server = http.createServer();
 
@@ -235,7 +239,7 @@ io.on("connection", function(c) {
 
 	validate_local_socket();
 
-	// Disconnect listener
+	/* Disconnect listener */
 	c.on("disconnect", function() {
 		console.log("Client disconnected.");
 		var idx = clients.indexOf(c);
