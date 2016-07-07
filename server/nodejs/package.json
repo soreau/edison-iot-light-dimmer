@@ -1,0 +1,25 @@
+{
+  "name": "light-controller-server",
+  "version": "1.0.0",
+  "description": "Edison Light Dimmer Server",
+  "main": "relay-server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/soreau/edison-iot-light-dimmer.git"
+  },
+  "keywords": [
+    "IoT"
+  ],
+  "author": "Scott Moreau",
+  "license": "GPL-2.0",
+  "bugs": {
+    "url": "https://github.com/soreau/edison-iot-light-dimmer/issues"
+  },
+  "homepage": "https://github.com/soreau/edison-iot-light-dimmer",
+  "dependencies": {
+    "socket.io": "^1.4.8"
+  }
+}

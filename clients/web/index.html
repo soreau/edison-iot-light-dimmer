@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<style type="text/css">
+	body {
+		padding: 0;
+		background: #0062a8;
+	}
+	#header, h1 {
+		margin: 2px auto;
+	}
+	#header img {
+		padding: 25px 0px 0px 15px;
+		float: left;
+	}
+	h1, h2 {
+		width: 250px;
+		height: 125px;
+		margin: 0 auto;
+		padding-top: 40px;
+		color: #7c7c7c;
+		font-size: 47px;
+		font-weight: normal;
+		font-family: intel-clear, tahoma, helvetica, sans-serif;
+		text-align: center;
+	}
+	h2 {
+		width: 300px;
+		height: 80px;
+		padding-top: 25px;
+		font-size: 30px;
+		color: #aaa;
+	}
+	.container {
+		min-width: 850px;
+		min-height: 25px;
+		width: 65%;
+		padding: 0px 10px;
+		margin: 2px auto;
+		background-color: #e3e3e3;
+	}
+	#header {
+		height: 150px;
+	}
+	#ui_container {
+		padding: 10px;
+		background: #f8f8f8;
+	}
+	#gif_container {
+		width: 192px;
+		height: 37px;
+		margin: 40px auto;
+	}
+
+
+	</style>
+	<meta charset="utf-8">
+	<title>Home Control</title>
+	<link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+	<script src="http://127.0.0.1:8081/socket.io/socket.io.js"></script>
+	<script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+	<script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+	<script>
+	var current_color = "33";
+	var enabled = 1;
+	function get_color(value) {
+		return Math.round(((value / 0x7F) * 0xCC) + 0x33);
+	}
+	function update_bg_color(device_id, elem, type, component_name, value, send, max) {
+		if (value > max || value < 0)
+			return;
+		var c = get_color(value);
+		current_color = c;
+		if (ui_server.connected && send) {
+			console.log("sending " + device_id + ": " + value);
+			ui_server.emit("value_update", {id: device_id, type: type, component: component_name, value: value});
+		}
+		if (enabled == 1)
+			$(elem).css("background-color", "rgb(" + [c, c, 0].join() + ")");
+	}
+	function remove_elem(parent, elem) {
+		if (parent && elem)
+			parent.removeChild(elem)
+	}
+	function clear_container() {
+		var ui_container = document.getElementById("ui_container");
+		while (ui_container.firstChild) {
+			remove_elem(ui_container, ui_container.firstChild);
+		}
+	}
+	ui_server = io.connect("http://127.0.0.1:8081");
+	ui_server.on("error", function() {
+		console.log("socket.io connection error");
+	});
+	ui_server.on("connect", function() {
+		console.log("connected");
+	});
+	ui_server.on("disconnect", function() {
+		console.log("disconnected");
+		$(".device").remove();
+		$("h2", ui_container).show();
+		$("#gif_container").hide();
+	});
+	ui_server.on("device-disconnect", function(data) {
+		console.log("device-disconnect");
+		var ui_container = document.getElementById("ui_container");
+		var elem = document.getElementById(data.id);
+		remove_elem(ui_container, elem);
+		if (ui_container.childElementCount == 2)
+			$("h2", ui_container).show();
+			
+	});
+	ui_server.on("value_update", function(data) {
+		var device_div = document.getElementById(data.id);
+		if (data.type == "toggle") {
+			var $checkbox = $("#" + data.id + "-" + data.type + "-" + data.component);
+			$checkbox.prop("checked", data.value == 1 ? true : false);
+			if (data.value == 1) {
+				$checkbox.parent().css("background-color", "rgb(" + [current_color, current_color, 0].join() + ")");
+				$("#bulb-on").show();
+				$("#bulb-off").hide();
+				enabled = 1;
+			} else {
+				$checkbox.parent().css("background-color", "#7c7c7c");
+				$("#bulb-on").hide();
+				$("#bulb-off").show();
+				enabled = 0;
+			}
+		} else if (data.type == "range") {
+			console.log(data);
+			var slider_div = $("#" + data.id + "-" + data.type + "-" + data.component);
+			slider_div.slider("value", data.value);
+			update_bg_color(data.id, $("#" + data.id + "-toggle-t0-label"), "range", data.component, data.value, false, 0x7F);
+		}
+			
+	});
+	ui_server.on("descriptor", function(d) {
+		var ui_container = document.getElementById("ui_container");
+		var elem = document.getElementById(d.id);
+		remove_elem(ui_container, elem);
+		var device_div = document.createElement("div");
+		device_div.id = d.id;
+		device_div.className = "device";
+		console.log(device_div.id);
+		device_div.setAttribute("style", "margin: 25px; border: 1px solid black; padding: 10px; border-radius: 5px; background: #7c7c7c;");
+		var slider_label = document.createElement("div");
+		slider_label.innerHTML = d.name;
+		slider_label.id = "slider-label";
+		slider_label.setAttribute("style", "width: 200px; height: 12px; margin: 10px auto -10px; text-align: center; font: 15px arial; font-weight: bold; font-size: 16px; color: white;");
+		device_div.appendChild(slider_label);
+		var components = d.components;
+		$("#gif_container").hide();
+		$("h2", ui_container).hide();
+		components.forEach( function(c) {
+			if (c.type == "toggle") {
+				var checkbox = document.createElement("input");
+				checkbox.type = "checkbox";
+				checkbox.className = c.name;
+				checkbox.id = device_div.id + "-" + c.type + "-" + c.name;
+				checkbox.setAttribute("style", "position: absolute; opacity: 0;");
+				var checkbox_label = document.createElement("label");
+				checkbox_label.setAttribute("for", checkbox.id);
+				checkbox_label.id = checkbox.id + "-label";
+				checkbox_label.className = "checkbox-label";
+				checkbox_label.setAttribute("style", "width: 50px; height: 50px; margin: 0 0 0 100px; padding: 0; display: inline-block; position: relative;");
+				var checkbox_image_on = document.createElement("img");
+				checkbox_image_on.id = "bulb-on";
+				checkbox_image_on.setAttribute("src", "images/bulb-on.png");
+				checkbox_image_on.setAttribute("alt", "Light Switch");
+				checkbox_image_on.setAttribute("width", "50px");
+				checkbox_image_on.setAttribute("height", "50px");
+				checkbox_image_on.setAttribute("style", "position: absolute; top: 0px; left: 0px;");
+				var checkbox_image_off = document.createElement("img");
+				checkbox_image_off.id = "bulb-off";
+				checkbox_image_off.setAttribute("src", "images/bulb-off.png");
+				checkbox_image_off.setAttribute("alt", "Light Switch");
+				checkbox_image_off.setAttribute("width", "50px");
+				checkbox_image_off.setAttribute("height", "50px");
+				checkbox_image_off.setAttribute("style", "position: absolute; top: 0px; left: 0px;");
+				$(checkbox).attr("checked", c.current == 1 ? true : false);
+				enabled = c.current;
+				if (c.current == 1) {
+					$(checkbox_label).css("background-color", "rgb(" + [current_color, current_color, 0].join() + ")");
+					$(checkbox_image_off).hide();
+				} else {
+					$(checkbox_label).css("background-color", "#7c7c7c");
+					$(checkbox_image_on).hide();
+				}
+				$(checkbox).change(function () {
+					if (this.checked) {
+						console.log("checked");
+						enabled = 1;
+						$(checkbox_label).css("background-color", "rgb(" + [current_color, current_color, 0].join() + ")");
+						$(checkbox_image_on).show();
+						$(checkbox_image_off).hide();
+					} else {
+						console.log("unchecked");
+						enabled = 0;
+						$(checkbox_label).css("background-color", "#7c7c7c");
+						$(checkbox_image_on).hide();
+						$(checkbox_image_off).show();
+					}
+					if (ui_server.connected)
+						ui_server.emit("value_update", {id: device_div.id, type: c.type, component: c.name, value: this.checked ? 1 : 0});
+				});
+				checkbox_label.appendChild(checkbox);
+				checkbox_label.appendChild(checkbox_image_on);
+				checkbox_label.appendChild(checkbox_image_off);
+				device_div.appendChild(checkbox_label);
+				ui_container.appendChild(device_div);
+			} else if (c.type == "range") {
+				var slider_div = document.createElement("div");
+				var $checkbox_label = $("#" + d.id + "-toggle-t0-label");
+				slider_div.id = device_div.id + "-" + c.type + "-" + c.name;
+				slider_div.setAttribute("style", "width: 250px; height: 12px; margin: -25px auto 25px;");
+				$(slider_div).slider({
+					value: c.current,
+					min: c.min,
+					max: c.max,
+					animate: "false",
+					slide: function(event, ui) {
+						update_bg_color(d.id, $checkbox_label, c.type, c.name, ui.value, true, c.max);
+					}
+				});
+				$checkbox_label.bind("mousewheel DOMMouseScroll", function (e) {
+					var e0 = e.originalEvent;
+					var delta = e0.wheelDelta || -e0.detail;
+					var value = $(slider_div).slider("value");
+					console.log(value);
+
+					this.scrollTop += (delta < 0 ? 1 : -1) * 30;
+					e.preventDefault();
+					if (delta > 0)
+						value += 3;
+					else
+						value -= 3;
+					update_bg_color(d.id, $checkbox_label, c.type, c.name, value, true, c.max);
+					$(slider_div).slider("value", value);
+				});
+				device_div.appendChild(slider_div);
+				ui_container.appendChild(device_div);
+				update_bg_color(d.id, $("#" + d.id + "-toggle-t0-label"), c.type, c.name, c.current, false, c.max);
+			}
+		});
+	});
+	</script>
+</head>
+<body>
+	<div id="header" class="container">
+		<img src="images/intel-edison-logo.png" alt="Intel Edison Logo">
+		<h1>Device List</h1>
+	</div>
+	<div id="ui_container" class="container">
+		<h2 hidden>(empty)</h2>
+		<div id="gif_container">
+			<img src="images/connecting.gif" alt="Searching for devices">
+		</div>
+	</div>
+</body>
+</html>
