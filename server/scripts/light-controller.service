@@ -1,0 +1,15 @@
+[Unit]
+Description=Light Controller Relay Server
+After=core-server.target networking.target network-online.target
+
+[Service]
+ExecStart=/home/root/scripts/light-controller.sh
+Restart=always
+User=root
+Group=root
+Environment=PATH=/usr/bin
+Environment=NODE_ENV=production
+WorkingDirectory=/home/root/src/light-controller
+
+[Install]
+WantedBy=multi-user.target

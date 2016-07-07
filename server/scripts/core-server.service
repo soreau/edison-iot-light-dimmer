@@ -1,0 +1,13 @@
+[Unit]
+Description=Light Controller Core Server
+#Before=light-controller.target
+
+[Service]
+ExecStart=/home/root/src/light-controller/core-server
+Restart=always
+User=root
+Group=root
+WorkingDirectory=/home/root/src/light-controller
+
+[Install]
+WantedBy=multi-user.target
